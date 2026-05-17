@@ -1,0 +1,10 @@
+{
+  "name": "review-skills",
+  "description": "Paired PR-review loop: review-pr (reviewer) and request-pr-review (author). The two skills run in separate sessions and converge through the PR.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Jonathan Chen"
+  },
+  "license": "MIT",
+  "keywords": ["code-review", "pull-request", "github", "workflow"]
+}

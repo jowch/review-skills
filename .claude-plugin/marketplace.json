@@ -1,0 +1,19 @@
+{
+  "name": "review-skills",
+  "owner": {
+    "name": "Jonathan Chen"
+  },
+  "description": "A paired, multi-round pull-request review loop for Claude Code.",
+  "plugins": [
+    {
+      "name": "review-skills",
+      "source": "./",
+      "description": "Paired PR-review loop: review-pr (reviewer) and request-pr-review (author).",
+      "version": "1.0.0",
+      "author": {
+        "name": "Jonathan Chen"
+      },
+      "license": "MIT"
+    }
+  ]
+}
