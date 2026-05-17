@@ -13,7 +13,9 @@
       "author": {
         "name": "Jonathan Chen"
       },
-      "license": "MIT"
+      "license": "MIT",
+      "homepage": "https://github.com/jowch/review-skills",
+      "repository": "https://github.com/jowch/review-skills"
     }
   ]
 }

@@ -15,6 +15,8 @@ CLI](https://cli.github.com/).
 
 ## Install
 
+**Prerequisite:** both skills drive an authenticated [GitHub CLI](https://cli.github.com/). Install it and run `gh auth login` before using them.
+
 ### With `npx skills`
 
 ```bash
@@ -43,7 +45,8 @@ In a second session you start:
 > "Review PR #123" — triggers `review-pr`.
 
 Each skill also supports a `--once` mode for a single round without the
-monitoring loop. See each skill's `SKILL.md` for the full protocol.
+monitoring loop. See [`review-pr`](./skills/review-pr/SKILL.md) and
+[`request-pr-review`](./skills/request-pr-review/SKILL.md) for the full protocol.
 
 ## License
 
