@@ -29,8 +29,8 @@ Vincent), which a `npx skills` user will not have installed. The packaged
 copy eliminates this reference (see Self-containment, below), so **the
 finished `review-skills` package depends on superpowers neither at install
 time nor at runtime.** Superpowers is named again only under Licensing —
-purely as the attribution source for derived content, which is a copyright
-credit, not a dependency.
+purely as the attribution source for the verbatim-copied reference file,
+which is a copyright credit, not a dependency.
 
 The vercel-labs `skills` CLI discovers skills by looking for `SKILL.md` files
 (standard locations, `.claude-plugin/marketplace.json`/`plugin.json`
@@ -59,7 +59,7 @@ review-skills/
     └── request-pr-review/
         ├── SKILL.md              # step 6 re-pointed to the bundled reference
         └── reference/
-            └── feedback-triage.md   # condensed triage guidance
+            └── feedback-triage.md   # verbatim copy of superpowers' receiving-code-review
 ```
 
 The `skills/` subdirectory keeps the repo root clean and matches the
@@ -81,8 +81,10 @@ path, to a bundled reference file:
 
 `skills/request-pr-review/reference/feedback-triage.md`
 
-This file is **not a skill** — it has no `SKILL.md` name and no frontmatter,
-so it never registers in the skill registry and cannot collide with the
+This file is **not a skill**. Skill discovery keys on the filename `SKILL.md`;
+this file is named `feedback-triage.md`, so even though its verbatim content
+includes `name`/`description` frontmatter, that frontmatter is inert — the
+file never registers in the skill registry and cannot collide with the
 upstream `superpowers:receiving-code-review` skill. It is reachable only
 through the link inside `request-pr-review/SKILL.md`.
 
@@ -90,11 +92,12 @@ The filename is deliberately `feedback-triage.md`, not `receiving-code-review.md
 so it bears no resemblance — by name or by skill identity — to the upstream
 skill.
 
-Its content is a **condensed** version of the essential guidance from
-`superpowers:receiving-code-review` (213 lines): the read → understand →
-verify response pattern, verify-before-implementing, and the rules for
-pushing back on incorrect or out-of-scope feedback. It is scoped to what
-`request-pr-review`'s triage step actually needs.
+Its content is a **verbatim copy** of `superpowers:receiving-code-review`
+(213 lines), preceded by the attribution header described under Licensing.
+The copy is verbatim rather than condensed deliberately: condensing would be
+a judgment call that risks silently dropping guidance the triage step relies
+on, and a verbatim copy keeps the licensing story unambiguous. There is no
+length pressure — a reference file can be as long as needed.
 
 `review-pr/SKILL.md` has no external skill dependencies and is copied verbatim.
 
@@ -103,13 +106,15 @@ pushing back on incorrect or out-of-scope feedback. It is scoped to what
 The repo is MIT licensed. The two skills are the user's own work, so the
 `LICENSE` file is a plain MIT notice for them.
 
-`feedback-triage.md` is derived from MIT-licensed superpowers content. MIT
-requires the upstream copyright notice to travel with substantial derived
-portions. Therefore:
+`feedback-triage.md` is a verbatim copy of MIT-licensed superpowers content.
+MIT requires the upstream copyright and permission notice to travel with
+copies. Therefore:
 
-- `feedback-triage.md` opens with a one-line attribution header:
-  *"Condensed from the `receiving-code-review` skill in obra/superpowers,
-  MIT © 2025 Jesse Vincent — https://github.com/obra/superpowers"*
+- `feedback-triage.md` opens with an attribution header placed *above* the
+  copied content: it states the file is a verbatim copy of the
+  `receiving-code-review` skill from `obra/superpowers`
+  (https://github.com/obra/superpowers) and reproduces the upstream MIT
+  copyright line, "© 2025 Jesse Vincent".
 - The `README.md` License section adds a "Third-party content" note linking
   to the superpowers repo.
 
