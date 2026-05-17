@@ -8,8 +8,8 @@
 Package the two PR-review skills currently living in `~/.claude/skills/`
 (`review-pr` and `request-pr-review`) into a standalone public GitHub repo
 that anyone can install with the vercel-labs `skills` CLI
-(`npx skills add <owner>/review-skills`) and, secondarily, with Claude Code's
-native plugin marketplace (`/plugin marketplace add <owner>/review-skills`).
+(`npx skills add jowch/review-skills`) and, secondarily, with Claude Code's
+native plugin marketplace (`/plugin marketplace add jowch/review-skills`).
 
 The package must be **self-contained** — zero dependency on any other plugin
 or skill being installed.
@@ -111,7 +111,7 @@ portions. Therefore:
   finds both `SKILL.md` files under `skills/`.
 - **Claude Code plugin marketplace** — `.claude-plugin/marketplace.json`
   declares the two skills so the repo also works via
-  `/plugin marketplace add <owner>/review-skills`. The exact `marketplace.json`
+  `/plugin marketplace add jowch/review-skills`. The exact `marketplace.json`
   schema will be verified against current Claude Code plugin-marketplace docs
   during implementation rather than assumed.
 
@@ -128,7 +128,7 @@ portions. Therefore:
 
 - Before pushing: `npx skills add ~/projects/review-skills --list` lists both
   skills from the local path.
-- After pushing: the same command against the `<owner>/review-skills`
+- After pushing: the same command against the `jowch/review-skills`
   shorthand lists both skills.
 
 ## Out of scope (YAGNI)
