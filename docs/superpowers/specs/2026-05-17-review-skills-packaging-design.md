@@ -19,10 +19,18 @@ or skill being installed.
 The two skills implement a paired, multi-round PR-review loop:
 
 - `review-pr` — the reviewer half. Standalone; no external skill dependencies.
-- `request-pr-review` — the author half. Currently step 6 declares a hard
-  dependency: *"REQUIRED SUB-SKILL: use `superpowers:receiving-code-review`."*
-  That sub-skill ships in the `superpowers` plugin (`github.com/obra/superpowers`,
-  MIT © 2025 Jesse Vincent), which a `npx skills` user will not have.
+- `request-pr-review` — the author half.
+
+**Problem this design removes:** in the *source copy* of `request-pr-review`
+(at `~/.claude/skills/`), step 6 today reads *"REQUIRED SUB-SKILL: use
+`superpowers:receiving-code-review`."* That sub-skill ships in the
+`superpowers` plugin (`github.com/obra/superpowers`, MIT © 2025 Jesse
+Vincent), which a `npx skills` user will not have installed. The packaged
+copy eliminates this reference (see Self-containment, below), so **the
+finished `review-skills` package depends on superpowers neither at install
+time nor at runtime.** Superpowers is named again only under Licensing —
+purely as the attribution source for derived content, which is a copyright
+credit, not a dependency.
 
 The vercel-labs `skills` CLI discovers skills by looking for `SKILL.md` files
 (standard locations, `.claude-plugin/marketplace.json`/`plugin.json`
