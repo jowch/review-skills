@@ -89,8 +89,8 @@ git rev-parse HEAD           # record this SHA as the round-1 baseline
    - Latest reviewer review is `approved` → find the most recent implementer
      turn (by position in the comment list) posted after it: `done=true` (or
      absent/unparseable) → converged, stop; `done=false` → a post-approval
-     re-review is pending, proceed; no such turn yet → arm the Monitor (with the
-     bounded post-approval wait) and wait.
+     re-review is pending, proceed; no such turn yet → arm a new Monitor (the
+     prior session's is gone; it uses the bounded post-approval wait) and wait.
    - Otherwise, if `R > I` you have already reviewed the latest changes — stop.
 
 ### Round 1 — full review
@@ -126,7 +126,7 @@ each notification, finish any in-progress round first, then branch.
 - `post-approval wait elapsed` → the author never responded within the wait
   window; go to Exit and treat the PR as converged.
 - `done=false` → the author pushed post-approval changes; run the re-review
-  (steps 1–3 below) **unless** you have already run 3 post-approval rounds — in
+  (steps 1–3 below) **unless** you have already run 3 post-approval re-review rounds since your most recent `approved` — in
   that case skip it and go to Exit (see the post-approval round cap). Nits are
   suppressed after round 1, so a post-approval re-review can only re-approve or
   surface a regression — it never requests new nit work.
@@ -162,12 +162,13 @@ Stop when **any** of:
 - a blocking finding stays contested for 2 rounds (author rebuts, you re-assert) —
   a stalemate, not progress.
 
-On **convergence** (any of the first three bullets), `TaskStop` the Monitor and
+On **convergence** (the done signal, the post-approval timeout, or the post-approval round cap), `TaskStop` the Monitor and
 print a round-by-round summary. Do **not** post a closing review — the author's
 `done=true` comment, or its absence, is the closing state on the PR. (A
 post-approval re-review that surfaces a regression is *not* an exit — it posts
 `changes-requested` and the loop continues; the post-approval round counter
-stops applying until your next `approved`.)
+stops applying until your next `approved`. Your count of post-approval rounds
+resets on each new `approved`.)
 
 On a non-converged exit (the 5-review cap or a stalemate), post a final review
 whose verdict trailer is `"verdict":"escalated"`, listing what remains — this
