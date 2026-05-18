@@ -113,7 +113,7 @@ loop stays open until you post `done=true`. This is a branch off step 5 — do
 - Then **fork on the outcome**:
   - **You made no code changes** (every nit declined or deferred) → go to
     **Converged**; its comment carries `done=true`.
-  - **You made code changes** → commit as `address review nits (round N)` (step 7), then
+  - **You made code changes** → commit as `address review nits (round N)` (commit + push as in step 7), then
     `git push`, then post a rebuttal whose turn marker is
     `<!-- review-loop:implementer round=N done=false -->` (Fixed/Skipped
     sections as in step 8). Keep monitoring — the reviewer re-reviews the new

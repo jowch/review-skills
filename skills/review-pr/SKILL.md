@@ -126,10 +126,11 @@ each notification, finish any in-progress round first, then branch.
 - `post-approval wait elapsed` → the author never responded within the wait
   window; go to Exit and treat the PR as converged.
 - `done=false` → the author pushed post-approval changes; run the re-review
-  (steps 1–3 below) **unless** you have already run 3 post-approval re-review rounds since your most recent `approved` — in
-  that case skip it and go to Exit (see the post-approval round cap). Nits are
-  suppressed after round 1, so a post-approval re-review can only re-approve or
-  surface a regression — it never requests new nit work.
+  (steps 1–3 below) **unless** you have already run 3 post-approval re-review
+  rounds since your most recent `approved` — in that case skip it and go to
+  Exit (see the post-approval round cap). Nits are suppressed after round 1,
+  so a post-approval re-review can only re-approve or surface a regression —
+  it never requests new nit work.
 
 **If your last verdict was `changes-requested`,** always run the re-review; the
 `done` flag is not consulted in that phase.
@@ -154,9 +155,9 @@ Stop when **any** of:
   turn marker whose `done` is absent/unparseable) — **convergence**;
 - after your `approved`, the Monitor reports `post-approval wait elapsed` — the
   author did not respond within the wait window; treat the PR as converged;
-- after your `approved`, you have run **3** post-approval re-review rounds and a
-  4th `done=false` turn arrives — treat the PR as converged rather than chasing
-  further voluntary polish;
+- the **post-approval round cap** — after your `approved`, you have run **3**
+  post-approval re-review rounds and a 4th `done=false` turn arrives → treat
+  the PR as converged rather than chasing further voluntary polish;
 - you have posted **5** `changes-requested` reviews without resolution —
   `approved` reviews do not count toward this ceiling;
 - a blocking finding stays contested for 2 rounds (author rebuts, you re-assert) —
@@ -230,9 +231,11 @@ done
 
 Each emitted line is your cue to act: `done=false` → run the next re-review
 round; `done=true` → converge (see Exit); `post-approval wait elapsed` →
-converge (the author went quiet after approval). An absent `done` defaults to
-`true`. The `idle` counter only advances while your latest verdict is
-`approved`, so the pre-approval (`changes-requested`) wait stays unbounded.
+converge (the author went quiet after approval). A `post-approval wait elapsed`
+line that arrives while a re-review is already in progress is spurious — finish
+that round and ignore the stale timeout. An absent `done` defaults to `true`.
+The `idle` counter only advances while your latest verdict is `approved`, so
+the pre-approval (`changes-requested`) wait stays unbounded.
 
 ## --once mode
 
