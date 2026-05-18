@@ -92,17 +92,19 @@ mirroring how the implementer's Monitor already emits the verdict.
 
 ### 5. Caps and entry guards
 
-- **Reviewer escalation cap** — redefined to count `changes-requested` reviews,
-  not all reviews, so repeated `approved`s never false-trigger an escalation.
-  Hitting the 5-review ceiling while the latest verdict is `approved` → disarm
-  quietly (treat as converged); while blocking is still open → post `escalated`.
-  The stalemate rule (a blocking finding contested for 2 rounds) is unchanged.
-- **Implementer escalation cap** — likewise counts reviews carrying blocking
-  findings; post-approval `done=false` rounds do not push toward escalation.
+- **Reviewer escalation cap** — counts only `changes-requested` reviews, so
+  repeated `approved`s never false-trigger an escalation. Five `changes-requested`
+  reviews without resolution → post `escalated`. The stalemate rule (a blocking
+  finding contested for 2 rounds) is unchanged.
+- **Implementer escalation cap** — likewise counts only reviewer reviews that
+  carried blocking findings; post-approval `done=false` rounds do not push toward
+  escalation.
 - **Termination guarantee** — the post-approval phase is bounded: re-reviews
-  report blocking only, so each either finds a regression (normal capped loop)
-  or nothing (`approved`). The implementer ends the phase by choosing
-  `done=true`.
+  report blocking only, so they never request new nit work. A further
+  post-approval round happens only if the implementer voluntarily pushes more
+  changes, and the implementer skill directs it to converge promptly via
+  `done=true`. A regression found post-approval re-enters the normal
+  `changes-requested` loop, which the cap bounds.
 - **Reviewer entry idempotency guard** — when the latest reviewer review is
   `approved`, check for a following implementer round: `done=true` → converged,
   stop; `done=false` → re-review pending, proceed; none → arm the Monitor and
