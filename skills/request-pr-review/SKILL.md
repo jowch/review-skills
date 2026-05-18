@@ -99,7 +99,7 @@ do not re-arm it. On each notification, finish any in-progress round first, then
    - **Skipped:** explicit rationale for each — complexity cost, scope, or a better
      alternative.
    Post the rebuttal **even if every point was skipped** — it shows each point was
-   weighed and cues the reviewer's next round. Then keep monitoring.
+   weighed and cues the reviewer's next round. Then keep monitoring — the next notification re-enters at step 5.
 
 ### Respond to approval
 
@@ -113,7 +113,7 @@ loop stays open until you post `done=true`. This is a branch off step 5 — do
 - Then **fork on the outcome**:
   - **You made no code changes** (every nit declined or deferred) → go to
     **Converged**; its comment carries `done=true`.
-  - **You made code changes** → commit as `address review nits (round N)`, then
+  - **You made code changes** → commit as `address review nits (round N)` (step 7), then
     `git push`, then post a rebuttal whose turn marker is
     `<!-- review-loop:implementer round=N done=false -->` (Fixed/Skipped
     sections as in step 8). Keep monitoring — the reviewer re-reviews the new
@@ -174,7 +174,7 @@ done
 ```
 
 Each emitted line is your cue to triage and respond — unless the verdict is
-`approved`, in which case converge.
+`approved`, in which case go to **Respond to approval**.
 
 ## --once mode
 
