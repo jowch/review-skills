@@ -76,7 +76,8 @@ implementer forks again, converging to `done=true` once it stops touching code.
 ### 4. Reviewer loop change
 
 After posting `approved`, the reviewer does **not** exit. It keeps the Monitor
-armed and waits for the next implementer round:
+armed — now with a **bounded post-approval wait** — and waits for the next
+implementer round:
 
 - `done=true` (or absent) → converged: `TaskStop` the Monitor, print the
   round-by-round summary, stop silently — no closing PR post. The implementer's
@@ -86,29 +87,42 @@ armed and waits for the next implementer round:
   phase cannot spawn fresh nits to chase). Post `approved` again, or
   `changes-requested` if the nit fix introduced a bug (which drops back into the
   normal loop).
+- **post-approval wait elapsed** — if no implementer turn arrives within the
+  wait window (the implementer session is slow or dead), the reviewer disarms
+  and treats the PR as converged. Safe: the code was already approved.
 
 The reviewer's Monitor emits the `done` flag alongside the round number,
-mirroring how the implementer's Monitor already emits the verdict.
+mirroring how the implementer's Monitor already emits the verdict; it also
+tracks the post-approval wait and emits a timeout line when the window elapses.
 
-### 5. Caps and entry guards
+### 5. Caps, bounds, and entry guards
 
 - **Reviewer escalation cap** — counts only `changes-requested` reviews, so
   repeated `approved`s never false-trigger an escalation. Five `changes-requested`
   reviews without resolution → post `escalated`. The stalemate rule (a blocking
   finding contested for 2 rounds) is unchanged.
-- **Implementer escalation cap** — likewise counts only reviewer reviews that
-  carried blocking findings; post-approval `done=false` rounds do not push toward
+- **Implementer escalation cap** — likewise counts only `changes-requested`
+  reviewer reviews; post-approval `done=false` rounds do not push toward
   escalation.
-- **Termination guarantee** — the post-approval phase is bounded: re-reviews
-  report blocking only, so they never request new nit work. A further
-  post-approval round happens only if the implementer voluntarily pushes more
-  changes, and the implementer skill directs it to converge promptly via
-  `done=true`. A regression found post-approval re-enters the normal
-  `changes-requested` loop, which the cap bounds.
+- **Post-approval wait** — after posting `approved`, the reviewer's Monitor
+  waits a bounded window (≈20 minutes of 30-second polls) for the implementer's
+  turn. A `done=false` turn resets the window for the next approval; if the
+  window elapses with no turn, the reviewer disarms and treats the PR as
+  converged. This closes the deadlock where a dead implementer session would
+  otherwise leave the reviewer waiting forever. The pre-approval
+  (`changes-requested`) wait stays unbounded — only the post-approval phase is
+  bounded.
+- **Post-approval round cap** — the reviewer runs at most **3** post-approval
+  re-review rounds (`done=false` turns answered after an `approved`). On a 4th,
+  it disarms and treats the PR as converged rather than chasing further
+  voluntary polish. A post-approval re-review that surfaces a regression exits
+  this phase into the normal `changes-requested` loop (bounded by the escalation
+  cap); the post-approval counter no longer applies until the next `approved`.
 - **Reviewer entry idempotency guard** — when the latest reviewer review is
-  `approved`, check for a following implementer round: `done=true` → converged,
-  stop; `done=false` → re-review pending, proceed; none → arm the Monitor and
-  wait.
+  `approved`, check for the most recent implementer turn (by position in the
+  comment list) posted after it: `done=true` (or absent) → converged, stop;
+  `done=false` → re-review pending, proceed; none → arm the Monitor (with the
+  bounded post-approval wait) and wait.
 
 ### 6. `--once` mode
 
@@ -128,7 +142,11 @@ interpret it.
 
 ## Out of scope
 
-- Time-based timeouts on the Monitors. The skills already assume both paired
-  sessions stay alive; a dead counterpart is a pre-existing failure mode and the
-  absent-signal fallback bounds the new path.
+- A bounded wait on the reviewer's **pre-approval** (`changes-requested`)
+  Monitor. That wait stays unbounded, consistent with the existing loop; only
+  the post-approval phase is bounded by this design (see §5).
+- A bounded wait on the **implementer**'s Monitor. If the implementer posts
+  `done=false` and the reviewer has already disarmed, the implementer waits as
+  it does today — the existing "both sessions stay alive" assumption still
+  holds on that side.
 - Changes to the `escalated` path or the stalemate detection logic.

@@ -74,10 +74,11 @@ with:
    implementer `I`. (This guards a re-invocation in a fresh session; a running
    loop re-enters via the Monitor, not here.)
    - Latest reviewer review is `escalated` → stop.
-   - Latest reviewer review is `approved` → find the latest implementer turn
-     posted after it: `done=true` (or absent/unparseable) → converged, stop;
-     `done=false` → a post-approval re-review is pending, proceed; no such turn
-     yet → arm the Monitor and wait.
+   - Latest reviewer review is `approved` → find the most recent implementer
+     turn (by position in the comment list) posted after it: `done=true` (or
+     absent/unparseable) → converged, stop; `done=false` → a post-approval
+     re-review is pending, proceed; no such turn yet → arm the Monitor (with the
+     bounded post-approval wait) and wait.
    - Otherwise, if `R > I` you have already reviewed the latest changes — stop.
 ```
 
@@ -124,15 +125,20 @@ with:
 ```
 ### Rounds 2+ — scoped re-review
 
-The Monitor runs for the whole loop and emits one line per new author turn,
-carrying that turn's `done` flag — do not re-arm it. On each notification, finish
-any in-progress round first, then branch.
+The Monitor runs for the whole loop and emits one line per new author turn
+(carrying that turn's `done` flag) — and, after you have approved, a
+`post-approval wait elapsed` line if the author goes quiet. Do not re-arm it. On
+each notification, finish any in-progress round first, then branch.
 
-**If your last verdict was `approved`,** act on the `done` flag:
+**If your last verdict was `approved`,** act on the Monitor line:
 - `done=true` (or absent/unparseable) → **converged.** Go to Exit.
+- `post-approval wait elapsed` → the author never responded within the wait
+  window; go to Exit and treat the PR as converged.
 - `done=false` → the author pushed post-approval changes; run the re-review
-  (steps 1–3 below). Nits are suppressed after round 1, so this re-review can
-  only re-approve or surface a regression — it never requests new nit work.
+  (steps 1–3 below) **unless** you have already run 3 post-approval rounds — in
+  that case skip it and go to Exit (see the post-approval round cap). Nits are
+  suppressed after round 1, so a post-approval re-review can only re-approve or
+  surface a regression — it never requests new nit work.
 
 **If your last verdict was `changes-requested`,** always run the re-review; the
 `done` flag is not consulted in that phase.
@@ -178,19 +184,28 @@ with:
 Stop when **any** of:
 - the author posts a turn marker with `done=true` (or, after your `approved`, a
   turn marker whose `done` is absent/unparseable) — **convergence**;
+- after your `approved`, the Monitor reports `post-approval wait elapsed` — the
+  author did not respond within the wait window; treat the PR as converged;
+- after your `approved`, you have run **3** post-approval re-review rounds and a
+  4th `done=false` turn arrives — treat the PR as converged rather than chasing
+  further voluntary polish;
 - you have posted **5** `changes-requested` reviews without resolution —
   `approved` reviews do not count toward this ceiling;
 - a blocking finding stays contested for 2 rounds (author rebuts, you re-assert) —
   a stalemate, not progress.
 
-On **convergence**, `TaskStop` the Monitor and print a round-by-round summary. Do
-**not** post a closing review — the author's `done=true` comment is the closing
-artifact on the PR.
+On **convergence** (any of the first three bullets), `TaskStop` the Monitor and
+print a round-by-round summary. Do **not** post a closing review — the author's
+`done=true` comment, or its absence, is the closing state on the PR. (A
+post-approval re-review that surfaces a regression is *not* an exit — it posts
+`changes-requested` and the loop continues; the post-approval round counter
+stops applying until your next `approved`.)
 
-On a non-converged exit (cap or stalemate), post a final review whose verdict
-trailer is `"verdict":"escalated"`, listing what remains — this signals the
-author's loop to stop too, so it does not wait forever on a reviewer that has
-already left. Then `TaskStop` the Monitor and print a round-by-round summary.
+On a non-converged exit (the 5-review cap or a stalemate), post a final review
+whose verdict trailer is `"verdict":"escalated"`, listing what remains — this
+signals the author's loop to stop too, so it does not wait forever on a reviewer
+that has already left. Then `TaskStop` the Monitor and print a round-by-round
+summary.
 ```
 
 - [ ] **Step 6: Update the Monitor to emit the `done` flag**
@@ -217,7 +232,7 @@ with:
 
 ````
 ```bash
-PR=<number>; seen=0
+PR=<number>; seen=0; idle=0; WAIT=40   # WAIT × 30s ≈ 20 min post-approval grace
 while true; do
   body=$(gh pr view "$PR" --json comments --jq '.comments[].body' 2>/dev/null || true)
   m=$(echo "$body" | grep -oP 'review-loop:implementer round=[0-9]+( done=(true|false))?' \
@@ -225,14 +240,26 @@ while true; do
   r=$(echo "$m" | grep -oP 'round=\K[0-9]+' || true)
   if [ -n "$r" ] && [ "$r" -gt "$seen" ]; then
     d=$(echo "$m" | grep -oP 'done=\K(true|false)' || true)
-    echo "implementer round $r done=${d:-true}"; seen="$r"
+    echo "implementer round $r done=${d:-true}"; seen="$r"; idle=0
+  else
+    v=$(gh pr view "$PR" --json reviews --jq '.reviews[].body' 2>/dev/null \
+        | grep -oP 'review-verdict: \K\{[^}]*\}' | tail -1 || true)
+    if echo "$v" | grep -q '"verdict":"approved"'; then
+      idle=$((idle + 1))
+      if [ "$idle" -ge "$WAIT" ]; then echo "post-approval wait elapsed"; break; fi
+    else
+      idle=0
+    fi
   fi
   sleep 30
 done
 ```
 
 Each emitted line is your cue to act: `done=false` → run the next re-review
-round; `done=true` → converge (see Exit). An absent `done` defaults to `true`.
+round; `done=true` → converge (see Exit); `post-approval wait elapsed` →
+converge (the author went quiet after approval). An absent `done` defaults to
+`true`. The `idle` counter only advances while your latest verdict is
+`approved`, so the pre-approval (`changes-requested`) wait stays unbounded.
 ````
 
 - [ ] **Step 7: Add a Monitor convergence anti-pattern**
@@ -378,21 +405,22 @@ Insert this new section immediately before the `### Converged` heading:
 ### Respond to approval
 
 `approved` clears every blocking finding, but its nits are unaddressed and the
-loop stays open until you post `done=true`. Do **not** jump straight to Converged.
+loop stays open until you post `done=true`. This is a branch off step 5 — do
+**not** jump straight to Converged.
 
-5a. Triage the nits exactly as in step 6 — **read the bundled
-    `reference/feedback-triage.md` first** — verifying each against the code and
-    pushing back on the unsound ones.
-5b. Fork on the outcome:
-    - **You made no code changes** (every nit declined or deferred) → go to
-      **Converged**; its comment carries `done=true`.
-    - **You made code changes** → commit as `address review nits (round N)`, then
-      `git push`, then post a rebuttal whose turn marker is
-      `<!-- review-loop:implementer round=N done=false -->` (Fixed/Skipped
-      sections as in step 8). Keep monitoring — the reviewer re-reviews the new
-      commits, then re-approves (or flags a regression). On the next `approved`,
-      return to **Respond to approval**; on `changes-requested`, triage and
-      respond via steps 6–8.
+- **Triage the nits** exactly as in step 6 — **read the bundled
+  `reference/feedback-triage.md` first** — verifying each against the code and
+  pushing back on the unsound ones.
+- Then **fork on the outcome**:
+  - **You made no code changes** (every nit declined or deferred) → go to
+    **Converged**; its comment carries `done=true`.
+  - **You made code changes** → commit as `address review nits (round N)`, then
+    `git push`, then post a rebuttal whose turn marker is
+    `<!-- review-loop:implementer round=N done=false -->` (Fixed/Skipped
+    sections as in step 8). Keep monitoring — the reviewer re-reviews the new
+    commits, then re-approves (or flags a regression). On the next `approved`,
+    return to **Respond to approval**; on `changes-requested`, triage and
+    respond via steps 6–8.
 ```
 
 - [ ] **Step 5: Rewrite the "Converged" section so the converge comment carries `done=true`**
@@ -499,8 +527,8 @@ Run: `grep -Fn 'review-loop:implementer round=N done=true|false' skills/request-
 Expected: 1 match (the Wire protocol marker definition).
 
 Run: `grep -Fn 'Respond to approval' skills/request-pr-review/SKILL.md`
-Expected: at least 3 matches — the step-5 route, the section heading, and the
-loop-back reference in section 5b.
+Expected: at least 3 matches — the step-5 route, the section heading, the
+loop-back reference in the fork bullet, and the `--once` reference.
 
 - [ ] **Step 10: Commit**
 
@@ -548,9 +576,18 @@ Run: `git status --short skills/request-pr-review/reference/feedback-triage.md`
 Expected: empty output — the bundled reference is unchanged (the design states
 feedback-reception discipline is unaffected).
 
-- [ ] **Step 6: Final commit if Task 3 produced fixes**
+- [ ] **Step 6: Confirm `review-pr`'s `## --once mode` section needs no change**
 
-If steps 2 or 4 required edits, commit them:
+Read the `## --once mode` section of `skills/review-pr/SKILL.md`. It states
+`review-pr <PR> --once` does Round 1 only and does not arm the Monitor. Round 1
+never converges (Task 1 Step 3) and `--once` never arms the bounded Monitor, so
+this section is correct as-is — **no edit expected**. (The implementer-side
+`--once` *is* updated, in Task 2 Step 7, because its `approved` path changes.)
+If the section somehow implies `--once` converges on `approved`, fix it to match.
+
+- [ ] **Step 7: Final commit if Task 3 produced fixes**
+
+If steps 2, 4, or 6 required edits, commit them:
 
 ```bash
 git add -A
