@@ -68,7 +68,8 @@ initial review. Thereafter reviewer review *N+1* answers implementer rebuttal *N
   (say, "no comments"): breaking it is blocking, and the finding quotes the
   rule. Must have a `file:line` citation. Any blocking finding →
   `changes-requested`.
-- **Nit** — style, naming, optional polish. Never blocks convergence.
+- **Nit** — style, naming or polish that no written rule covers. Never blocks
+  convergence.
 
 ## Setup
 
