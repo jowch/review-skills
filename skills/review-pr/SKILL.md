@@ -63,8 +63,11 @@ initial review. Thereafter reviewer review *N+1* answers implementer rebuttal *N
 ### Blocking vs. nit
 
 - **Blocking** — correctness, logic error, security, missing tests for new
-  behavior, broken build, violated project convention. Must have a `file:line`
-  citation. Any blocking finding → `changes-requested`.
+  behavior, broken build, violated project convention. A rule written in an
+  `AGENTS.md`/`CLAUDE.md` is a project convention even when it is about style
+  (say, "no comments"): breaking it is blocking, and the finding quotes the
+  rule. Must have a `file:line` citation. Any blocking finding →
+  `changes-requested`.
 - **Nit** — style, naming, optional polish. Never blocks convergence.
 
 ## Setup
@@ -99,7 +102,8 @@ git rev-parse HEAD           # record this SHA as the round-1 baseline
 4. Dispatch a **fresh `general-purpose` reviewer subagent** over the diff
    (`gh pr diff <PR>`). Instruct it to:
    - read every `AGENTS.md`/`CLAUDE.md` from the repo root down to each changed
-     file's directory, and follow the project's conventions;
+     file's directory, and check every added line against their rules, the
+     style rules included (a banned kind of comment, naming, formatting);
    - if `.claude/agents/` contains project reviewer agents (name/description
      mentions code review), dispatch those **as well** and fold in their findings;
    - cover correctness/logic, security, tests, performance, docs, convention
